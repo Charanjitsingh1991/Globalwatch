@@ -1,0 +1,16 @@
+export const RSS_FEEDS = [
+  { name: 'BBC World',       url: 'https://feeds.bbci.co.uk/news/world/rss.xml' },
+  { name: 'Reuters',         url: 'https://feeds.reuters.com/reuters/worldNews' },
+  { name: 'Al Jazeera',      url: 'https://www.aljazeera.com/xml/rss/all.xml' },
+  { name: 'France 24',       url: 'https://www.france24.com/en/rss' },
+  { name: 'DW News',         url: 'https://rss.dw.com/rdf/rss-en-all' },
+  { name: 'The Guardian',    url: 'https://www.theguardian.com/world/rss' },
+  { name: 'NPR World',       url: 'https://feeds.npr.org/1004/rss.xml' },
+  { name: 'Sky News',        url: 'https://feeds.skynews.com/feeds/rss/world.xml' },
+  { name: 'Euronews',        url: 'https://feeds.feedburner.com/euronews/en/news' },
+  { name: 'Defense News',    url: 'https://www.defensenews.com/arc/outboundfeeds/rss/' },
+  { name: 'Arab News',       url: 'https://www.arabnews.com/rss.xml' },
+  { name: 'South China MP',  url: 'https://www.scmp.com/rss/91/feed' },
+  { name: 'The Hindu',       url: 'https://www.thehindu.com/news/international/?service=rss' },
+  { name: 'Middle East Eye', url: 'https://www.middleeasteye.net/rss' },
+] as const
