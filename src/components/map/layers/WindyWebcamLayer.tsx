@@ -244,91 +244,35 @@ function WindyWebcamLayerInner({ visible }: Props) {
 
       const marker = L.marker([cam.lat, cam.lon], { icon, zIndexOffset: 100 })
 
-      // Rich popup with preview image
-      const popupHtml = `
+      // Tooltip on hover (lightweight, no click needed)
+      marker.bindTooltip(`
         <div style="
-          background: #111118;
-          color: #F0F0F0;
-          font-family: monospace;
-          min-width: 200px;
-          max-width: 240px;
-          font-size: 12px;
-          border-radius: 4px;
-          overflow: hidden;
+          background:#111118;
+          color:#00D4FF;
+          font-family:monospace;
+          font-size:10px;
+          padding:4px 8px;
+          border-radius:3px;
+          border:1px solid #1e1e2e;
+          white-space:nowrap;
+          max-width:200px;
+          overflow:hidden;
+          text-overflow:ellipsis;
         ">
-          ${cam.previewUrl ? `
-            <div style="position: relative;">
-              <img
-                src="${cam.previewUrl}"
-                alt="${cam.title}"
-                style="
-                  width: 100%;
-                  height: 110px;
-                  object-fit: cover;
-                  display: block;
-                "
-                onerror="this.parentElement.style.display='none'"
-              />
-              <div style="
-                position: absolute;
-                top: 4px;
-                left: 4px;
-                background: rgba(0,0,0,0.8);
-                border-radius: 3px;
-                padding: 2px 6px;
-                font-size: 9px;
-                color: #22c55e;
-                display: flex;
-                align-items: center;
-                gap: 3px;
-              ">
-                <span>●</span> LIVE CAM
-              </div>
-            </div>
-          ` : ''}
-          <div style="padding: 8px;">
-            <div style="
-              color: #00D4FF;
-              font-weight: bold;
-              margin-bottom: 3px;
-              font-size: 11px;
-              line-height: 1.3;
-            ">
-              ${cam.title}
-            </div>
-            ${cam.city ? `
-              <div style="color: #888; font-size: 10px; margin-bottom: 3px;">
-                📍 ${cam.city}${cam.country ? ', ' + cam.country : ''}
-              </div>
-            ` : ''}
-            <div style="
-              display: inline-block;
-              background: rgba(249,115,22,0.15);
-              color: #F97316;
-              border-radius: 3px;
-              padding: 1px 5px;
-              font-size: 9px;
-              margin-bottom: 6px;
-            ">
-              ${cam.zone}
-            </div>
-            <div style="
-              color: #555;
-              font-size: 9px;
-              border-top: 1px solid #1E1E2E;
-              padding-top: 5px;
-            ">
-              Click to open live player ▶
-            </div>
-          </div>
+          📷 ${cam.title}
+          <span style="color:#888;display:block;font-size:9px;">
+            ${cam.city ? cam.city + ', ' : ''}${cam.country}
+          </span>
         </div>
-      `
-
-      marker.bindPopup(popupHtml, {
-        maxWidth: 250,
-        className: 'gw-popup',
+      `, {
+        permanent: false,
+        direction: 'top',
+        offset: [0, -10],
+        opacity: 1,
+        className: 'gw-tooltip',
       })
 
+      // Single click = open modal immediately
       marker.on('click', () => {
         setSelectedCam(cam)
       })

@@ -15,7 +15,20 @@ export interface YouTubeStream {
   embedDisabled?: boolean
 }
 
-export type NewsChannel = YouTubeStream
+export interface NewsChannel {
+  id: string
+  name: string
+  flag: string
+  country: string
+  region: string
+  category: 'global' | 'mena' | 'asia' | 'southasia' |
+            'africa' | 'europe' | 'americas' | 'defense' | 'eastasia'
+  language: string
+  hlsUrl?: string
+  hlsFallback?: string
+  youtubeId?: string
+  watchUrl: string
+}
 
 export interface WebcamSource {
   id: string
@@ -578,11 +591,225 @@ export const WEBCAM_REGIONS = [
   { id: 'space',     label: '🚀 Space' },
 ]
 
-export const NEWS_CHANNELS = YOUTUBE_STREAMS.map(s => ({
-  ...s,
-  youtubeId: s.videoId,
-  city: s.region,
-}))
+export const NEWS_CHANNELS: NewsChannel[] = [
+
+  // ── GLOBAL ──────────────────────────────────────
+  {
+    id: 'aljazeera',
+    name: 'Al Jazeera English',
+    flag: '🇶🇦', country: 'Qatar', region: 'Global',
+    category: 'global', language: 'EN',
+    // Official Al Jazeera HLS stream
+    hlsUrl: 'https://live-hls-web-aje.getaj.net/AJE/01.m3u8',
+    hlsFallback: 'https://aljazeera-eng-hd-live.5centscdn.com/live/aljazeera.stream/chunks.m3u8',
+    youtubeId: 'Z_4a5z7JEZg',
+    watchUrl: 'https://www.youtube.com/@AlJazeeraEnglish/live',
+  },
+  {
+    id: 'bloomberg',
+    name: 'Bloomberg Television',
+    flag: '🇺🇸', country: 'USA', region: 'Finance/Global',
+    category: 'global', language: 'EN',
+    // Official Bloomberg HLS
+    hlsUrl: 'https://bloomberg.com/media-manifest/streams/us.m3u8',
+    hlsFallback: 'https://bloomberg.com/media-manifest/streams/phoenix-us.m3u8',
+    youtubeId: 'dp8PhLsUcFE',
+    watchUrl: 'https://www.bloomberg.com/live',
+  },
+  {
+    id: 'dw',
+    name: 'DW News',
+    flag: '🇩🇪', country: 'Germany', region: 'Global',
+    category: 'global', language: 'EN',
+    hlsUrl: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8',
+    youtubeId: 'hVZCRMn5Hpg',
+    watchUrl: 'https://www.youtube.com/@DWNews/live',
+  },
+  {
+    id: 'france24en',
+    name: 'France 24 English',
+    flag: '🇫🇷', country: 'France', region: 'Global',
+    category: 'global', language: 'EN',
+    hlsUrl: 'https://amg00106-france24-france24-samsunguk-qvpp8.amagi.tv/playlist/amg00106-france24-france24-samsunguk/playlist.m3u8',
+    hlsFallback: 'https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8',
+    youtubeId: 'h3MuIUNCCLI',
+    watchUrl: 'https://www.france24.com/en/live-news',
+  },
+  {
+    id: 'euronews',
+    name: 'Euronews',
+    flag: '🇪🇺', country: 'EU', region: 'Europe/Global',
+    category: 'global', language: 'EN',
+    hlsUrl: 'https://euronews-euronews-world-en-live.rakuten.wurl.tv/playlist.m3u8',
+    youtubeId: 'JCCEnGEBM3o',
+    watchUrl: 'https://www.euronews.com/live',
+  },
+  {
+    id: 'skynews',
+    name: 'Sky News',
+    flag: '🇬🇧', country: 'UK', region: 'Global',
+    category: 'global', language: 'EN',
+    hlsUrl: 'https://linear901-oo-hls0-prd-gtm.delivery.skycdp.com/17501/sde-fast-skynews/master.m3u8',
+    youtubeId: 'XwJsQBm1GOs',
+    watchUrl: 'https://news.sky.com/watch-sky-news-live',
+  },
+  {
+    id: 'trtworld',
+    name: 'TRT World',
+    flag: '🇹🇷', country: 'Turkey', region: 'MENA/Global',
+    category: 'mena', language: 'EN',
+    hlsUrl: 'https://tv-trtworld.live.trt.com.tr/master.m3u8',
+    youtubeId: 'gc6K1L_iSyQ',
+    watchUrl: 'https://www.trtworld.com/watch',
+  },
+
+  // ── MIDDLE EAST ─────────────────────────────────
+  {
+    id: 'aljazeeraarabic',
+    name: 'Al Jazeera Arabic',
+    flag: '🇶🇦', country: 'Qatar', region: 'MENA',
+    category: 'mena', language: 'AR',
+    hlsUrl: 'https://live-hls-web-aja.getaj.net/AJA/01.m3u8',
+    youtubeId: 'mBPpMgr-tJI',
+    watchUrl: 'https://www.aljazeera.net/live',
+  },
+  {
+    id: 'iranintl',
+    name: 'Iran International',
+    flag: '🇮🇷', country: 'UK/Iran', region: 'Iran/MENA',
+    category: 'mena', language: 'FA/EN',
+    hlsUrl: 'https://iintl-fa-apple-hls1.amagi.tv/playlist/amg01022-iintl-iintlfa-tubi/playlist.m3u8',
+    youtubeId: '0mUmFEOJkMw',
+    watchUrl: 'https://www.iranintl.com/en/live-tv',
+  },
+  {
+    id: 'i24news',
+    name: 'i24 News (Israel)',
+    flag: '🇮🇱', country: 'Israel', region: 'Israel/MENA',
+    category: 'mena', language: 'EN',
+    hlsUrl: 'https://bcovlive-a.akamaihd.net/6cb643de4e8a41238ac94a4b49c16154/eu-central-1/NA/playlist.m3u8',
+    youtubeId: 'xHBEy7e4JDk',
+    watchUrl: 'https://www.i24news.tv/en/live',
+  },
+
+  // ── SOUTH ASIA ───────────────────────────────────
+  {
+    id: 'wion',
+    name: 'WION',
+    flag: '🇮🇳', country: 'India', region: 'South Asia',
+    category: 'southasia', language: 'EN',
+    hlsUrl: 'https://wionlive.live.wionlive.com/wion_hd/live.m3u8',
+    youtubeId: 'SIQesDqCBdg',
+    watchUrl: 'https://www.wionews.com/live-tv',
+  },
+  {
+    id: 'ndtv24x7',
+    name: 'NDTV 24x7',
+    flag: '🇮🇳', country: 'India', region: 'India',
+    category: 'southasia', language: 'EN',
+    hlsUrl: 'https://ndtvsod.akamaized.net/hls/live/2017922/ndtvlivelive/master.m3u8',
+    youtubeId: 'Sljd-HkmXlc',
+    watchUrl: 'https://www.ndtv.com/live-tv',
+  },
+  {
+    id: 'geo',
+    name: 'Geo News Pakistan',
+    flag: '🇵🇰', country: 'Pakistan', region: 'Pakistan',
+    category: 'southasia', language: 'UR',
+    hlsUrl: 'https://geo-lh.akamaized.net/hls/live/622066/geonews/master.m3u8',
+    youtubeId: 'KLsVwkqKo3k',
+    watchUrl: 'https://www.geo.tv/live',
+  },
+  {
+    id: 'arynews',
+    name: 'ARY News Pakistan',
+    flag: '🇵🇰', country: 'Pakistan', region: 'Pakistan',
+    category: 'southasia', language: 'UR',
+    hlsUrl: 'https://arydigitalseg.akamaized.net/hls/live/2028514/arynews/master.m3u8',
+    youtubeId: 'bDFQaJdFhNs',
+    watchUrl: 'https://arynews.tv/live',
+  },
+  {
+    id: 'tolonews',
+    name: 'TOLOnews Afghanistan',
+    flag: '🇦🇫', country: 'Afghanistan', region: 'Afghanistan',
+    category: 'southasia', language: 'DA/PS',
+    hlsUrl: 'https://d3i8mjozdsw2m5.cloudfront.net/TOLONEWS/TOLONEWS.isml/TOLONEWS.m3u8',
+    youtubeId: '1KaAsuP-C0k',
+    watchUrl: 'https://tolonews.com/live',
+  },
+
+  // ── EAST ASIA ────────────────────────────────────
+  {
+    id: 'nhkworld',
+    name: 'NHK World Japan',
+    flag: '🇯🇵', country: 'Japan', region: 'Japan/Asia',
+    category: 'eastasia', language: 'EN',
+    hlsUrl: 'https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index.m3u8',
+    youtubeId: '29bKR3lbPFo',
+    watchUrl: 'https://www3.nhk.or.jp/nhkworld/en/live',
+  },
+  {
+    id: 'cna',
+    name: 'CNA Singapore',
+    flag: '🇸🇬', country: 'Singapore', region: 'Southeast Asia',
+    category: 'eastasia', language: 'EN',
+    hlsUrl: 'https://d2e1asnsl7br7b.cloudfront.net/7782e205e72f43b7ac55f91bbe43f3f3/index.m3u8',
+    youtubeId: '7pSlSPFkpQo',
+    watchUrl: 'https://www.channelnewsasia.com/watch-live-tv',
+  },
+
+  // ── AFRICA ──────────────────────────────────────
+  {
+    id: 'africanews',
+    name: 'Africanews',
+    flag: '🌍', country: 'Pan-African', region: 'Africa',
+    category: 'africa', language: 'EN',
+    hlsUrl: 'https://africanews-tcs-live.akamaized.net/hls/live/2093895/event_1/master.m3u8',
+    youtubeId: 'l6aqAlK8EOY',
+    watchUrl: 'https://www.africanews.com/live',
+  },
+  {
+    id: 'channelstv',
+    name: 'Channels TV Nigeria',
+    flag: '🇳🇬', country: 'Nigeria', region: 'West Africa',
+    category: 'africa', language: 'EN',
+    hlsUrl: 'https://cdn.channelstv.com/live/streams/ctv-live/index.m3u8',
+    youtubeId: 'P0vz9WuZfMg',
+    watchUrl: 'https://www.channelstv.com/live',
+  },
+
+  // ── EUROPE ──────────────────────────────────────
+  {
+    id: 'france24fr',
+    name: 'France 24 Français',
+    flag: '🇫🇷', country: 'France', region: 'Francophone',
+    category: 'europe', language: 'FR',
+    hlsUrl: 'https://static.france24.com/live/F24_FR_LO_HLS/live_web.m3u8',
+    youtubeId: 'hCZlMp_FKZM',
+    watchUrl: 'https://www.france24.com/fr/direct',
+  },
+
+  // ── AMERICAS ────────────────────────────────────
+  {
+    id: 'globalnews',
+    name: 'Global News Canada',
+    flag: '🇨🇦', country: 'Canada', region: 'Canada',
+    category: 'americas', language: 'EN',
+    hlsUrl: 'https://global-live.akamaized.net/hls/live/master.m3u8',
+    youtubeId: 'BQWK3k9JGzc',
+    watchUrl: 'https://globalnews.ca/live',
+  },
+  {
+    id: 'telesur',
+    name: 'teleSUR English',
+    flag: '🌎', country: 'Venezuela', region: 'Latin America',
+    category: 'americas', language: 'EN',
+    hlsUrl: 'https://multistream.telesurtv.net/live/smil:telesur.smil/playlist.m3u8',
+    youtubeId: 'L03dYZKdAPY',
+    watchUrl: 'https://www.telesurenglish.net/live',
+  },
+]
 
 export const WEBCAM_FEEDS: WebcamFeed[] = [
 
