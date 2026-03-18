@@ -1,7 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-type ActivePanel = 'news' | 'alerts' | 'intel' | 'countries' | 'flights' | 'ships' | null
+type ActivePanel =
+  | 'news' | 'intel' | 'streams' | 'clock'
+  | 'markets' | 'cyber' | 'predict'
+  | 'alerts' | 'countries' | 'flights' | 'ships'
+  | null
 
 interface UIStore {
   sidebarOpen: boolean

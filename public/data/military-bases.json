@@ -1,0 +1,24 @@
+{
+  "bases": [
+    { "id": "diego-garcia", "name": "Diego Garcia (BIOT)", "country": "USA/UK", "lat": -7.3, "lon": 72.4, "type": "naval", "significance": "critical" },
+    { "id": "ramstein",     "name": "Ramstein Air Base",   "country": "USA",    "lat": 49.4, "lon": 7.6,  "type": "airforce", "significance": "critical" },
+    { "id": "kadena",       "name": "Kadena Air Base",     "country": "USA",    "lat": 26.4, "lon": 127.8,"type": "airforce", "significance": "critical" },
+    { "id": "camp-humphreys","name": "Camp Humphreys",    "country": "USA",    "lat": 37.0, "lon": 127.0,"type": "army", "significance": "high" },
+    { "id": "incirlik",     "name": "Incirlik Air Base",   "country": "USA/NATO","lat": 37.0,"lon": 35.4, "type": "airforce", "significance": "critical" },
+    { "id": "al-udeid",     "name": "Al Udeid Air Base",   "country": "USA",    "lat": 25.1, "lon": 51.3, "type": "airforce", "significance": "critical" },
+    { "id": "bahrain-naval","name": "NSA Bahrain (5th Fleet)","country": "USA", "lat": 26.2, "lon": 50.5, "type": "naval", "significance": "critical" },
+    { "id": "guam-andersen","name": "Andersen AFB Guam",  "country": "USA",    "lat": 13.6, "lon": 144.9,"type": "airforce", "significance": "critical" },
+    { "id": "yokosuka",     "name": "CFAY Yokosuka",       "country": "USA",    "lat": 35.3, "lon": 139.7,"type": "naval", "significance": "high" },
+    { "id": "portsmouth",   "name": "Portsmouth Naval",    "country": "UK",     "lat": 50.8, "lon": -1.1, "type": "naval", "significance": "high" },
+    { "id": "tartus",       "name": "Tartus Naval Base",   "country": "Russia", "lat": 34.9, "lon": 35.9, "type": "naval", "significance": "critical" },
+    { "id": "hmeimim",      "name": "Hmeimim Air Base",    "country": "Russia", "lat": 35.4, "lon": 35.9, "type": "airforce", "significance": "critical" },
+    { "id": "camp-lemonnier","name": "Camp Lemonnier",     "country": "USA",    "lat": 11.5, "lon": 43.2, "type": "army", "significance": "high" },
+    { "id": "manus-island", "name": "Manus Island Base",  "country": "USA/AU", "lat": -2.1, "lon": 147.4,"type": "naval", "significance": "medium" },
+    { "id": "raf-akrotiri", "name": "RAF Akrotiri",        "country": "UK",     "lat": 34.6, "lon": 32.9, "type": "airforce", "significance": "high" },
+    { "id": "pearl-harbor", "name": "Pearl Harbor",        "country": "USA",    "lat": 21.4, "lon": -157.9,"type": "naval", "significance": "critical" },
+    { "id": "norfolk",      "name": "Naval Station Norfolk","country": "USA",   "lat": 36.9, "lon": -76.3,"type": "naval", "significance": "critical" },
+    { "id": "rota",         "name": "Naval Station Rota",  "country": "USA/Spain","lat": 36.6,"lon": -6.3,"type": "naval", "significance": "high" },
+    { "id": "guantanamo",   "name": "Guantanamo Bay",      "country": "USA",    "lat": 20.0, "lon": -75.1,"type": "naval", "significance": "medium" },
+    { "id": "victoria-hk",  "name": "PLA HK Garrison",    "country": "China",  "lat": 22.3, "lon": 114.2,"type": "army", "significance": "medium" }
+  ]
+}

@@ -2,67 +2,90 @@
 import { useUIStore } from '@/store/uiStore'
 import NewsPanel from '@/components/panels/NewsPanel'
 import IntelPanel from '@/components/panels/IntelPanel'
+import StreamsPanel from '@/components/panels/StreamsPanel'
+import WorldClockPanel from '@/components/panels/WorldClockPanel'
+import MarketsPanel from '@/components/panels/MarketsPanel'
+import CyberPanel from '@/components/panels/CyberPanel'
+import PredictPanel from '@/components/panels/PredictPanel'
+import FlightsPanel from '@/components/panels/FlightsPanel'
 
-type Tab = 'news' | 'intel'
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'news',  label: '📡 NEWS' },
-  { id: 'intel', label: '🤖 INTEL' },
+type Tab = 'news' | 'intel' | 'streams' | 'clock' | 'markets' | 'cyber' | 'predict' | 'flights'
+
+const TABS: { id: Tab; label: string; title: string }[] = [
+  { id: 'news',    label: '📡', title: 'NEWS' },
+  { id: 'intel',   label: '🤖', title: 'INTEL' },
+  { id: 'streams', label: '📺', title: 'STREAMS' },
+  { id: 'clock',   label: '🕐', title: 'CLOCK' },
+  { id: 'markets', label: '📈', title: 'MARKETS' },
+  { id: 'cyber',   label: '💻', title: 'CYBER' },
+  { id: 'predict', label: '🎯', title: 'PREDICT' },
+  { id: 'flights', label: '✈',  title: 'FLIGHTS' },
 ]
 
 export default function RightPanel() {
   const { rightPanelOpen, toggleRightPanel, activePanel, setActivePanel } = useUIStore()
-  const currentTab = (activePanel === 'intel' ? 'intel' : 'news') as Tab
+  const currentTab = (activePanel as Tab) ?? 'news'
 
   return (
-    <>
-      {/* Toggle button */}
-      <button
-        onClick={toggleRightPanel}
-        className="absolute top-1/2 -translate-y-1/2 z-[1001]
-          bg-surface border border-border text-text-muted
-          hover:text-accent hover:border-primary
-          w-5 h-12 flex items-center justify-center
-          rounded-l text-xs font-mono transition-all duration-200"
-        style={{ right: rightPanelOpen ? '316px' : '0px' }}
-      >
-        {rightPanelOpen ? '▶' : '◀'}
-      </button>
+    <div
+      className="flex-shrink-0 bg-surface border-l border-border
+        flex flex-col transition-all duration-300 overflow-hidden"
+      style={{ width: rightPanelOpen ? '360px' : '0px' }}
+    >
+      <div className="w-[360px] flex flex-col h-full">
 
-      {/* Panel */}
-      <div
-        className="absolute right-0 top-0 h-full z-[1000]
-          bg-surface/95 border-l border-border
-          transition-all duration-300 overflow-hidden flex flex-col"
-        style={{
-          width: rightPanelOpen ? '320px' : '0px',
-          backdropFilter: 'blur(8px)',
-        }}
-      >
-        <div className="min-w-[320px] flex flex-col h-full">
-          {/* Tab bar */}
-          <div className="flex border-b border-border flex-shrink-0">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActivePanel(tab.id)}
-                className={`flex-1 py-2 text-xs font-mono transition-all border-b-2 ${
-                  currentTab === tab.id
-                    ? 'text-accent border-accent'
-                    : 'text-text-muted border-transparent hover:text-text-primary'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+        {/* Tab row 1 — first 4 tabs */}
+        <div className="flex border-b border-border flex-shrink-0">
+          {TABS.slice(0, 4).map((tab) => (
+            <button key={tab.id} onClick={() => setActivePanel(tab.id)}
+              title={tab.title}
+              className={`flex-1 py-2 text-base transition-all border-b-2 ${
+                currentTab === tab.id
+                  ? 'border-accent bg-accent/5'
+                  : 'text-text-muted border-transparent hover:bg-white/5'
+              }`}>
+              {tab.label}
+            </button>
+          ))}
+          <button onClick={toggleRightPanel}
+            className="px-2 text-text-muted hover:text-accent border-l border-border
+              text-xs font-mono flex items-center" title="Close">▶</button>
+        </div>
 
-          {/* Panel content */}
-          <div className="flex-1 overflow-hidden">
-            {currentTab === 'news'  && <NewsPanel />}
-            {currentTab === 'intel' && <IntelPanel />}
-          </div>
+        {/* Tab row 2 — remaining tabs */}
+        <div className="flex border-b border-border flex-shrink-0">
+          {TABS.slice(4).map((tab) => (
+            <button key={tab.id} onClick={() => setActivePanel(tab.id)}
+              title={tab.title}
+              className={`flex-1 py-1.5 text-base transition-all border-b-2 ${
+                currentTab === tab.id
+                  ? 'border-accent bg-accent/5'
+                  : 'text-text-muted border-transparent hover:bg-white/5'
+              }`}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Active tab name */}
+        <div className="px-3 py-1.5 border-b border-border bg-surface/80 flex-shrink-0">
+          <span className="text-accent font-mono text-xs font-bold uppercase tracking-widest">
+            {TABS.find(t => t.id === currentTab)?.title}
+          </span>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-hidden">
+          {currentTab === 'news'    && <NewsPanel />}
+          {currentTab === 'intel'   && <IntelPanel />}
+          {currentTab === 'streams' && <StreamsPanel />}
+          {currentTab === 'clock'   && <WorldClockPanel />}
+          {currentTab === 'markets' && <MarketsPanel />}
+          {currentTab === 'cyber'   && <CyberPanel />}
+          {currentTab === 'predict' && <PredictPanel />}
+          {currentTab === 'flights' && <FlightsPanel />}
         </div>
       </div>
-    </>
+    </div>
   )
 }

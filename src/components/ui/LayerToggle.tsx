@@ -1,59 +1,74 @@
 'use client'
+import { useState } from 'react'
 import { useMapStore } from '@/store/mapStore'
+import { LAYER_CONFIG, LAYER_CATEGORIES } from '@/lib/layerConfig'
 import type { LayerName } from '@/types/events'
 
-interface LayerConfig {
-  key: LayerName
-  label: string
-  icon: string
-  color: string
-}
-
-const LAYERS: LayerConfig[] = [
-  { key: 'earthquakes', label: 'Earthquakes',  icon: '◎', color: '#EF4444' },
-  { key: 'conflicts',   label: 'Conflicts',    icon: '⚔', color: '#F97316' },
-  { key: 'fires',       label: 'Fires',        icon: '🔥', color: '#F97316' },
-  { key: 'disasters',   label: 'Disasters',    icon: '⚡', color: '#EAB308' },
-  { key: 'flights',     label: 'Flights',      icon: '✈', color: '#3B82F6' },
-  { key: 'ships',       label: 'Ships',        icon: '⛵', color: '#06B6D4' },
-  { key: 'news',        label: 'News',         icon: '📡', color: '#8B5CF6' },
-  { key: 'weather',     label: 'Weather',      icon: '🌤', color: '#22C55E' },
-]
+type ExtendedLayerName = LayerName | 'gpsjam' | 'cables' | 'military' | 'cyber'
 
 export default function LayerToggle() {
   const { layers, toggleLayer } = useMapStore()
+  const [expanded, setExpanded] = useState<string>('security')
 
   return (
     <div className="flex flex-col gap-1">
       <div className="text-text-muted font-mono text-xs uppercase tracking-widest mb-2 px-1">
         Data Layers
       </div>
-      {LAYERS.map(({ key, label, icon, color }) => {
-        const active = layers[key]
+      {LAYER_CATEGORIES.map((category) => {
+        const categoryLayers = LAYER_CONFIG.filter((l) => l.category === category)
+        const isOpen = expanded === category
+        const activeCount = categoryLayers.filter(
+          (l) => layers[l.key as keyof typeof layers]
+        ).length
+
         return (
-          <button
-            key={key}
-            onClick={() => toggleLayer(key)}
-            className={`
-              flex items-center gap-2 px-3 py-2 rounded text-xs font-mono
-              border transition-all duration-150 text-left
-              ${active
-                ? 'border-opacity-50 bg-opacity-10'
-                : 'border-border bg-transparent text-text-muted opacity-50'
-              }
-            `}
-            style={active ? {
-              borderColor: color + '80',
-              backgroundColor: color + '15',
-              color,
-            } : undefined}
-          >
-            <span className="text-sm">{icon}</span>
-            <span>{label}</span>
-            <span className={`ml-auto text-xs ${active ? 'text-green-400' : 'text-gray-600'}`}>
-              {active ? 'ON' : 'OFF'}
-            </span>
-          </button>
+          <div key={category} className="mb-1">
+            <button
+              onClick={() => setExpanded(isOpen ? '' : category)}
+              className="w-full flex items-center justify-between px-2 py-1.5
+                text-xs font-mono text-text-muted hover:text-accent
+                border border-border rounded transition-colors"
+            >
+              <span className="uppercase tracking-widest">{category}</span>
+              <span className="flex items-center gap-1">
+                {activeCount > 0 && (
+                  <span className="text-green-400 text-xs">{activeCount}</span>
+                )}
+                <span>{isOpen ? '▲' : '▼'}</span>
+              </span>
+            </button>
+
+            {isOpen && (
+              <div className="mt-1 flex flex-col gap-0.5 pl-1">
+                {categoryLayers.map(({ key, label, icon, color }) => {
+                  const active = layers[key as keyof typeof layers]
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => toggleLayer(key as ExtendedLayerName as LayerName)}
+                      className={`flex items-center gap-2 px-2 py-1.5 rounded
+                        text-xs font-mono border transition-all duration-150 text-left`}
+                      style={active ? {
+                        borderColor: color + '60',
+                        backgroundColor: color + '12',
+                        color,
+                      } : {
+                        borderColor: 'transparent',
+                        color: '#888',
+                      }}
+                    >
+                      <span>{icon}</span>
+                      <span className="flex-1">{label}</span>
+                      <span className={active ? 'text-green-400' : 'text-gray-600'}>
+                        {active ? '●' : '○'}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         )
       })}
     </div>

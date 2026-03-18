@@ -9,6 +9,9 @@ import ConflictLayer from './layers/ConflictLayer'
 import FireLayer from './layers/FireLayer'
 import DisasterLayer from './layers/DisasterLayer'
 import FlightLayer from './layers/FlightLayer'
+import GPSJamLayer from './layers/GPSJamLayer'
+import SubmarineCableLayer from './layers/SubmarineCableLayer'
+import MilitaryBaseLayer from './layers/MilitaryBaseLayer'
 import 'leaflet/dist/leaflet.css'
 
 if (typeof window !== 'undefined') {
@@ -31,17 +34,19 @@ const DARK_TILES = {
 
 export default function GlobalMap() {
   const { layers, timeFilter } = useMapStore()
-  const initialPreset = REGION_PRESETS['global']
+  const initial = REGION_PRESETS['global']
 
   return (
-    <div className="relative w-full h-full">
+    <div className="w-full h-full relative">
+      {/* Time filter — top center of map */}
       <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000]">
         <TimeFilterBar />
       </div>
+
       <MapContainer
-        center={initialPreset.center}
-        zoom={initialPreset.zoom}
-        className="w-full h-full"
+        center={initial.center}
+        zoom={initial.zoom}
+        style={{ width: '100%', height: '100%' }}
         zoomControl={false}
         attributionControl={true}
       >
@@ -52,11 +57,14 @@ export default function GlobalMap() {
           subdomains={DARK_TILES.subdomains}
         />
         <RegionPresets />
-        <EarthquakeLayer visible={layers.earthquakes} timeFilter={timeFilter} />
-        <ConflictLayer visible={layers.conflicts} timeFilter={timeFilter} />
-        <FireLayer visible={layers.fires} timeFilter={timeFilter} />
-        <DisasterLayer visible={layers.disasters} timeFilter={timeFilter} />
-        <FlightLayer visible={layers.flights} timeFilter={timeFilter} />
+        <EarthquakeLayer    visible={layers.earthquakes} timeFilter={timeFilter} />
+        <ConflictLayer      visible={layers.conflicts}   timeFilter={timeFilter} />
+        <FireLayer          visible={layers.fires}       timeFilter={timeFilter} />
+        <DisasterLayer      visible={layers.disasters}   timeFilter={timeFilter} />
+        <FlightLayer        visible={layers.flights}     timeFilter={timeFilter} />
+        <GPSJamLayer        visible={layers.gpsjam}      timeFilter={timeFilter} />
+        <SubmarineCableLayer visible={layers.cables}     timeFilter={timeFilter} />
+        <MilitaryBaseLayer  visible={layers.military}    timeFilter={timeFilter} />
       </MapContainer>
     </div>
   )

@@ -9,6 +9,10 @@ export type LayerName =
   | 'weather'
   | 'news'
   | 'disasters'
+  | 'gpsjam'
+  | 'cables'
+  | 'military'
+  | 'cyber'
 
 export interface BaseEvent {
   id: string
@@ -54,6 +58,11 @@ export interface FlightEvent extends BaseEvent {
   squawk: string
   onGround: boolean
   category: 'military' | 'cargo' | 'passenger' | 'private' | 'unknown'
+  // New fields for FlightAware-style display
+  airline?: string
+  originAirport?: string
+  destAirport?: string
+  originCountry?: string
 }
 
 export interface ShipEvent extends BaseEvent {

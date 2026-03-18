@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server'
-import { getRedis } from '@/lib/redis'
 import { logger } from '@/lib/logger'
-import { RSS_FEEDS } from '@/lib/rssFeeds'
 import { classify } from '@/lib/classifier'
+import { RSS_FEEDS } from '@/lib/rssFeeds'
 import type { NewsEvent } from '@/types/events'
 
-const CACHE_KEY = 'globalwatch:news:all'
-const TTL = 180
+// NO Redis cache for news — always fetch fresh
+// News refreshes every 60 seconds via SWR anyway
 
 interface RSSItem {
   title?: string
@@ -14,7 +13,13 @@ interface RSSItem {
   contentSnippet?: string
   isoDate?: string
   pubDate?: string
-  creator?: string
+}
+
+function parseDate(item: RSSItem): Date | null {
+  const raw = item.isoDate ?? item.pubDate
+  if (!raw) return null
+  const d = new Date(raw)
+  return isNaN(d.getTime()) ? null : d
 }
 
 async function fetchFeed(name: string, url: string): Promise<NewsEvent[]> {
@@ -23,78 +28,83 @@ async function fetchFeed(name: string, url: string): Promise<NewsEvent[]> {
     const parser = new Parser({ timeout: 5000 })
     const feed = await parser.parseURL(url)
 
-    return (feed.items ?? []).slice(0, 10).map((item: RSSItem, i: number): NewsEvent => {
-      const headline = item.title ?? ''
-      const desc = item.contentSnippet ?? ''
-      const { severity, category, confidence } = classify(headline, desc)
+    // Only articles from last 6 hours
+    const cutoff = new Date(Date.now() - 6 * 60 * 60 * 1000)
 
-      return {
-        id: `${name}-${i}-${Date.now()}`,
+    const items: NewsEvent[] = []
+    for (const item of (feed.items ?? []).slice(0, 20)) {
+      const headline = item.title?.trim() ?? ''
+      if (!headline) continue
+
+      const pubDate = parseDate(item as RSSItem)
+
+      // Skip if no date or older than 6 hours
+      if (!pubDate || pubDate < cutoff) continue
+
+      const desc = item.contentSnippet?.slice(0, 300) ?? ''
+      const { severity, category } = classify(headline, desc)
+
+      items.push({
+        id: `${name}-${pubDate.getTime()}-${headline.slice(0, 20).replace(/\s/g, '')}`,
         lat: 0,
         lon: 0,
-        timestamp: item.isoDate ?? item.pubDate ?? new Date().toISOString(),
+        timestamp: pubDate.toISOString(),
         severity,
         title: headline,
         source: name,
         url: item.link ?? '#',
-        summary: desc.slice(0, 200),
+        summary: desc,
         category,
-        tone: confidence,
-      }
-    })
+        tone: 0,
+      })
+    }
+    return items
   } catch {
     return []
   }
 }
 
 export async function GET() {
-  const redis = getRedis()
-
   try {
-    if (redis) {
-      const cached = await redis.get(CACHE_KEY)
-      if (cached) {
-        const parsed = typeof cached === 'string' ? JSON.parse(cached) : cached
-        return NextResponse.json(parsed, {
-          headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate' },
-        })
-      }
-    }
-
+    // Fetch all 105 feeds in parallel with 5s per feed timeout
     const results = await Promise.allSettled(
       RSS_FEEDS.map((f) => fetchFeed(f.name, f.url))
     )
 
     const allItems = results
       .flatMap((r) => (r.status === 'fulfilled' ? r.value : []))
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, 200)
+      // Deduplicate by title
+      .reduce((acc: NewsEvent[], item) => {
+        const isDup = acc.some(
+          (e) => e.title.slice(0, 50).toLowerCase() ===
+                 item.title.slice(0, 50).toLowerCase()
+        )
+        if (!isDup) acc.push(item)
+        return acc
+      }, [])
+      // Sort newest first
+      .sort((a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      )
 
-    const result = {
+    logger.info(`News: fetched ${allItems.length} fresh articles`)
+
+    return NextResponse.json({
       data: allItems,
       stale: false,
-      baseline: false,
+      baseline: allItems.length === 0,
       timestamp: new Date().toISOString(),
       source: 'rss-aggregator',
       count: allItems.length,
-    }
-
-    if (redis) await redis.set(CACHE_KEY, JSON.stringify(result), { ex: TTL })
-
-    return NextResponse.json(result, {
-      headers: { 'Cache-Control': 's-maxage=60, stale-while-revalidate' },
+    }, {
+      headers: {
+        // Tell browser not to cache this response
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache',
+      },
     })
   } catch (error) {
     logger.error('News fetch failed', error)
-
-    if (redis) {
-      const stale = await redis.get(CACHE_KEY)
-      if (stale) {
-        const parsed = typeof stale === 'string' ? JSON.parse(stale) : stale
-        return NextResponse.json({ ...parsed, stale: true })
-      }
-    }
-
     return NextResponse.json({
       data: [], stale: false, baseline: true,
       timestamp: new Date().toISOString(),

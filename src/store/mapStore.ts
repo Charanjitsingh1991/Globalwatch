@@ -11,6 +11,10 @@ interface LayerState {
   weather: boolean
   news: boolean
   disasters: boolean
+  gpsjam: boolean
+  cables: boolean
+  military: boolean
+  cyber: boolean
 }
 
 interface MapStore {
@@ -36,6 +40,10 @@ export const useMapStore = create<MapStore>()(
         weather: false,
         news: true,
         disasters: true,
+        gpsjam: false,
+        cables: false,
+        military: false,
+        cyber: false,
       },
       timeFilter: '24h',
       region: 'global',
