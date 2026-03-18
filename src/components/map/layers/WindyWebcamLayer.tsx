@@ -94,9 +94,9 @@ function WindyModal({
         </div>
 
         <div style={{ aspectRatio: '16/9', background: '#000' }}>
-          {cam.embedUrl ? (
+          {(cam.playerLiveUrl || cam.playerDayUrl) ? (
             <iframe
-              src={cam.embedUrl}
+              src={cam.playerLiveUrl || cam.playerDayUrl}
               className="w-full h-full"
               allowFullScreen
               title={cam.title}
