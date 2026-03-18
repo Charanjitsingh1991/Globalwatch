@@ -3,29 +3,26 @@ import { getRedis } from '@/lib/redis'
 import { logger } from '@/lib/logger'
 
 const CACHE_KEY = 'globalwatch:windy:webcams'
-const TTL = 900
+const TTL = 840 // 14 minutes
 
-const CRISIS_ZONES = [
-  { name: 'Gaza/Israel',        box: [29.0,  33.0,  33.5,  36.5]  },
-  { name: 'Ukraine East',       box: [46.0,  30.0,  52.0,  40.0]  },
-  { name: 'Ukraine West',       box: [48.0,  22.0,  52.0,  32.0]  },
-  { name: 'Syria/Lebanon',      box: [32.0,  35.0,  37.5,  42.0]  },
-  { name: 'Iraq',               box: [29.0,  38.0,  37.5,  48.0]  },
-  { name: 'Iran',               box: [29.0,  44.0,  39.0,  63.0]  },
-  { name: 'Pakistan/Afghan',    box: [23.0,  60.0,  37.0,  75.0]  },
-  { name: 'Sudan/Sahel',        box: [8.0,   22.0,  22.0,  38.0]  },
-  { name: 'Yemen/Red Sea',      box: [12.0,  42.0,  18.0,  55.0]  },
-  { name: 'Myanmar',            box: [16.0,  92.0,  28.0, 101.0]  },
-  { name: 'Taiwan Strait',      box: [22.0, 118.0,  27.0, 122.0]  },
-  { name: 'South China Sea',    box: [5.0,  108.0,  22.0, 120.0]  },
-  { name: 'Korea Peninsula',    box: [34.0, 124.0,  42.0, 130.0]  },
-  { name: 'Ethiopia/Horn',      box: [3.0,   33.0,  15.0,  45.0]  },
-  { name: 'Libya',              box: [19.0,  10.0,  33.0,  25.0]  },
-  { name: 'Venezuela',          box: [0.0,  -73.0,  12.0, -59.0]  },
-  { name: 'Haiti',              box: [17.5, -74.5,  20.5, -71.5]  },
-  { name: 'Moscow',             box: [55.0,  36.0,  56.5,  38.5]  },
-  { name: 'Beijing',            box: [39.5, 115.5,  40.5, 117.0]  },
-  { name: 'Washington DC',      box: [38.5, -77.5,  39.2, -76.5]  },
+const LOCATIONS = [
+  { name: 'Jerusalem', lat: 31.77, lon: 35.21, radius: 100 },
+  { name: 'Tehran', lat: 35.68, lon: 51.38, radius: 150 },
+  { name: 'Kyiv', lat: 50.45, lon: 30.52, radius: 200 },
+  { name: 'Damascus', lat: 33.51, lon: 36.29, radius: 150 },
+  { name: 'Baghdad', lat: 33.34, lon: 44.40, radius: 150 },
+  { name: 'Karachi', lat: 24.86, lon: 67.01, radius: 100 },
+  { name: 'Kabul', lat: 34.52, lon: 69.17, radius: 100 },
+  { name: 'Khartoum', lat: 15.55, lon: 32.53, radius: 200 },
+  { name: 'Sanaa', lat: 15.35, lon: 44.20, radius: 150 },
+  { name: 'Naypyidaw', lat: 19.76, lon: 96.07, radius: 200 },
+  { name: 'Taipei', lat: 25.03, lon: 121.56, radius: 100 },
+  { name: 'Seoul', lat: 37.56, lon: 126.97, radius: 100 },
+  { name: 'Tripoli', lat: 32.90, lon: 13.18, radius: 150 },
+  { name: 'Caracas', lat: 10.48, lon: -66.87, radius: 100 },
+  { name: 'Port-au-Prince', lat: 18.54, lon: -72.33, radius: 100 },
+  { name: 'Moscow', lat: 55.75, lon: 37.61, radius: 100 },
+  { name: 'Beijing', lat: 39.90, lon: 116.40, radius: 100 },
 ]
 
 interface WindyWebcam {
@@ -65,20 +62,14 @@ interface WindyResponse {
   }
 }
 
-async function fetchZoneWebcams(
+async function fetchNearbyWebcams(
   apiKey: string,
-  zone: typeof CRISIS_ZONES[0]
+  loc: typeof LOCATIONS[0]
 ): Promise<WindyWebcam[]> {
-  const [latMin, lonMin, latMax, lonMax] = zone.box
-  const url = new URL('https://api.windy.com/webcams/api/v3/webcams')
+  const url = new URL(`https://api.windy.com/webcams/api/v3/webcams/nearby/${loc.lat},${loc.lon}/${loc.radius}`)
   url.searchParams.set('lang', 'en')
-  url.searchParams.set('limit', '10')
-  url.searchParams.set('offset', '0')
+  url.searchParams.set('limit', '5')
   url.searchParams.set('show', 'webcams:location,image,player,urls')
-  url.searchParams.set(
-    'bbox',
-    `${latMin},${lonMin},${latMax},${lonMax}` 
-  )
 
   const res = await fetch(url.toString(), {
     headers: {
@@ -92,12 +83,12 @@ async function fetchZoneWebcams(
   })
 
   if (!res.ok) {
-    logger.warn(`Windy zone ${zone.name} failed: ${res.status}`)
+    logger.warn(`Windy loc ${loc.name} failed: ${res.status}`)
     return []
   }
 
   const data: WindyResponse = await res.json()
-  return data?.result?.webcams ?? []
+  return (data?.result?.webcams ?? []).filter(cam => cam.status === 'active')
 }
 
 export interface WindyWebcamEvent {
@@ -163,22 +154,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const batches: typeof CRISIS_ZONES[] = []
-    for (let i = 0; i < CRISIS_ZONES.length; i += 4) {
-      batches.push(CRISIS_ZONES.slice(i, i + 4) as typeof CRISIS_ZONES)
+    const batches: typeof LOCATIONS[] = []
+    for (let i = 0; i < LOCATIONS.length; i += 4) {
+      batches.push(LOCATIONS.slice(i, i + 4) as typeof LOCATIONS)
     }
 
     const allCams: WindyWebcamEvent[] = []
 
     for (const batch of batches) {
       const results = await Promise.allSettled(
-        batch.map(zone => fetchZoneWebcams(apiKey, zone))
+        batch.map(loc => fetchNearbyWebcams(apiKey, loc))
       )
       results.forEach((result, i) => {
         if (result.status === 'fulfilled') {
-          const zone = batch[i]!
+          const loc = batch[i]!
           result.value.forEach(cam => {
-            const normalized = normalize(cam, zone.name)
+            const normalized = normalize(cam, loc.name)
             if (normalized) {
               if (!allCams.find(c => c.id === normalized.id)) {
                 allCams.push(normalized)
@@ -190,7 +181,7 @@ export async function GET(request: NextRequest) {
       await new Promise(r => setTimeout(r, 200))
     }
 
-    logger.info(`Windy: fetched ${allCams.length} webcams from ${CRISIS_ZONES.length} zones`)
+    logger.info(`Windy: fetched ${allCams.length} webcams from ${LOCATIONS.length} locations`)
 
     const result = {
       data: allCams,

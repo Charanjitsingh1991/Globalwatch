@@ -13,7 +13,7 @@ export async function GET() {
   }
 
   try {
-    const url1 = 'https://api.windy.com/webcams/api/v3/webcams?lang=en&limit=5&show=webcams:location,image,player,urls&bbox=31.0,34.5,32.5,36.0'
+    const url1 = 'https://api.windy.com/webcams/api/v3/webcams/nearby/31.77,35.21/100?lang=en&limit=5&show=webcams:location,image,player,urls'
     const r1 = await fetch(url1, {
       headers: {
         'x-windy-api-key': apiKey,
@@ -26,7 +26,7 @@ export async function GET() {
     })
     const body1 = await r1.text()
     ;(results.tests as unknown[]).push({
-      test: 'Jerusalem bbox',
+      test: 'Jerusalem nearby endpoint',
       url: url1,
       status: r1.status,
       statusText: r1.statusText,
@@ -35,7 +35,7 @@ export async function GET() {
     })
   } catch (e) {
     ;(results.tests as unknown[]).push({
-      test: 'Jerusalem bbox',
+      test: 'Jerusalem nearby',
       error: String(e),
     })
   }
