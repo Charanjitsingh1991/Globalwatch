@@ -15,6 +15,7 @@ interface LayerState {
   cables: boolean
   military: boolean
   cyber: boolean
+  windycams: boolean
 }
 
 interface MapStore {
@@ -44,6 +45,7 @@ export const useMapStore = create<MapStore>()(
         cables: false,
         military: false,
         cyber: false,
+        windycams: false,
       },
       timeFilter: '24h',
       region: 'global',

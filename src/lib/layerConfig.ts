@@ -25,6 +25,7 @@ export const LAYER_CONFIG: LayerConfig[] = [
   { key: 'ships',      label: 'Ships',           icon: '⛵', color: '#06B6D4', defaultOn: false, category: 'transport' },
   // Infrastructure
   { key: 'cables',     label: 'Submarine Cables',icon: '🌊', color: '#00D4FF', defaultOn: false, category: 'infrastructure' },
+  { key: 'windycams',  label: 'Windy Webcams',   icon: '📷', color: '#00D4FF', defaultOn: false, category: 'infrastructure' },
   // Media
   { key: 'news',       label: 'News Events',     icon: '📰', color: '#8B5CF6', defaultOn: true,  category: 'media' },
 ]

@@ -13,6 +13,7 @@ export type LayerName =
   | 'cables'
   | 'military'
   | 'cyber'
+  | 'windycams'
 
 export interface BaseEvent {
   id: string
