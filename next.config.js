@@ -1,8 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['localhost:3000', 'localhost:3001'],
+    },
+  },
   images: {
-    domains: [],
+    remotePatterns: [
+      { protocol: 'https', hostname: '**.windy.com' },
+      { protocol: 'https', hostname: '**.windytv.com' },
+      { protocol: 'https', hostname: 'img.youtube.com' },
+      { protocol: 'https', hostname: '**.youtube.com' },
+    ],
   },
   async headers() {
     return [
@@ -10,7 +20,6 @@ const nextConfig = {
         source: '/api/:path*',
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'DENY' },
         ],
       },
     ]

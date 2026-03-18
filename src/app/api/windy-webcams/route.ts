@@ -84,8 +84,11 @@ async function fetchZoneWebcams(
     headers: {
       'x-windy-api-key': apiKey,
       'Accept': 'application/json',
+      'User-Agent': 'GlobalWatch/1.0',
     },
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(15000),
+    // @ts-ignore
+    cache: 'no-store',
   })
 
   if (!res.ok) {

@@ -18,8 +18,11 @@ export async function GET() {
       headers: {
         'x-windy-api-key': apiKey,
         'Accept': 'application/json',
+        'User-Agent': 'GlobalWatch/1.0',
       },
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(15000),
+      // @ts-ignore
+      cache: 'no-store',
     })
     const body1 = await r1.text()
     ;(results.tests as unknown[]).push({
@@ -43,8 +46,11 @@ export async function GET() {
       headers: {
         'x-windy-api-key': apiKey,
         'Accept': 'application/json',
+        'User-Agent': 'GlobalWatch/1.0',
       },
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(15000),
+      // @ts-ignore
+      cache: 'no-store',
     })
     const body2 = await r2.text()
     ;(results.tests as unknown[]).push({
@@ -64,7 +70,12 @@ export async function GET() {
   try {
     const url3 = 'https://api.windy.com/api/webcams/v2/list/limit=3?show=webcams:location,image&key=' + apiKey
     const r3 = await fetch(url3, {
-      signal: AbortSignal.timeout(10000),
+      headers: {
+        'User-Agent': 'GlobalWatch/1.0',
+      },
+      signal: AbortSignal.timeout(15000),
+      // @ts-ignore
+      cache: 'no-store',
     })
     const body3 = await r3.text()
     ;(results.tests as unknown[]).push({
@@ -83,7 +94,12 @@ export async function GET() {
   try {
     const url4 = `https://api.windy.com/webcams/api/v3/webcams?lang=en&limit=3&show=webcams:location,image&key=${apiKey}` 
     const r4 = await fetch(url4, {
-      signal: AbortSignal.timeout(10000),
+      headers: {
+        'User-Agent': 'GlobalWatch/1.0',
+      },
+      signal: AbortSignal.timeout(15000),
+      // @ts-ignore
+      cache: 'no-store',
     })
     const body4 = await r4.text()
     ;(results.tests as unknown[]).push({
