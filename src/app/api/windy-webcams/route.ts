@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { getRedis } from '@/lib/redis'
 import { logger } from '@/lib/logger'
 
-const CACHE_KEY = 'globalwatch:windy:webcams:v4'
-const TTL = 840 // 14 minutes
+const CACHE_KEY = 'globalwatch:windy:webcams:v5'
+const TTL = 840
 
 export interface WindyWebcamEvent {
   id: string
@@ -17,17 +17,11 @@ export interface WindyWebcamEvent {
   status: string
   previewUrl: string
   iconUrl: string
+  thumbnailUrl: string
   playerLiveUrl: string
   playerDayUrl: string
   detailUrl: string
   viewCount: number
-}
-
-interface WindyCamImage {
-  current?: {
-    preview?: string
-    icon?: string
-  }
 }
 
 interface WindyCam {
@@ -35,15 +29,21 @@ interface WindyCam {
   title: string
   status: string
   viewCount: number
-  lastUpdatedOn: string
+  clusterSize?: number
   location?: {
-    city: string
-    country: string
-    country_code: string
+    city?: string
+    country?: string
+    country_code?: string
     latitude: number
     longitude: number
   }
-  images?: WindyCamImage
+  images?: {
+    current?: {
+      preview?: string
+      icon?: string
+      thumbnail?: string
+    }
+  }
   player?: {
     live?: string
     day?: string
@@ -52,11 +52,6 @@ interface WindyCam {
   urls?: {
     detail?: string
   }
-}
-
-interface WindyResponse {
-  total: number
-  webcams: WindyCam[]
 }
 
 function normalizeCam(
@@ -76,9 +71,10 @@ function normalizeCam(
     country: cam.location?.country ?? '',
     countryCode: cam.location?.country_code ?? '',
     zone: zoneName,
-    status: cam.status ?? 'unknown',
+    status: cam.status ?? 'active',
     previewUrl: cam.images?.current?.preview ?? '',
     iconUrl: cam.images?.current?.icon ?? '',
+    thumbnailUrl: cam.images?.current?.thumbnail ?? '',
     playerLiveUrl: cam.player?.live ?? '',
     playerDayUrl: cam.player?.day ?? '',
     detailUrl: cam.urls?.detail ?? '',
@@ -86,51 +82,46 @@ function normalizeCam(
   }
 }
 
-async function fetchWebcams(
+// Fetch webcams using NEARBY param (correct format)
+async function fetchNearby(
   apiKey: string,
-  params: Record<string, string | string[]>,
-  zoneName: string
+  lat: number,
+  lon: number,
+  radiusKm: number,
+  zoneName: string,
+  limit = 10
 ): Promise<WindyWebcamEvent[]> {
   try {
-    const url = new URL('https://api.windy.com/webcams/api/v3/webcams')
-
-    // Add all params — handle arrays
-    Object.entries(params).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        value.forEach(v => url.searchParams.append(key, v))
-      } else {
-        url.searchParams.set(key, value)
-      }
+    // Correct nearby format: lat,lon,radius
+    const params = new URLSearchParams({
+      lang: 'en',
+      limit: String(Math.min(limit, 50)),
+      offset: '0',
+      nearby: `${lat},${lon},${radiusKm}`,
     })
+    // include must be appended multiple times
+    ;['location', 'images', 'player', 'urls'].forEach(v =>
+      params.append('include', v)
+    )
 
-    // Always add these
-    url.searchParams.set('lang', 'en')
-    url.searchParams.set('limit', '50')
-    url.searchParams.set('offset', '0')
-
-    // Correct include format from docs
-    ;['location', 'images', 'player', 'urls'].forEach(inc => {
-      url.searchParams.append('include', inc)
-    })
-
-    const res = await fetch(url.toString(), {
-      method: 'GET',
+    const url = `https://api.windy.com/webcams/api/v3/webcams?${params}`
+    const res = await fetch(url, {
       headers: {
         'x-windy-api-key': apiKey,
         'Accept': 'application/json',
         'User-Agent': 'GlobalWatch/1.0',
       },
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(10000),
       cache: 'no-store',
     })
 
     if (!res.ok) {
       const body = await res.text()
-      logger.warn(`Windy ${zoneName}: HTTP ${res.status} — ${body.slice(0, 200)}`)
+      logger.warn(`Windy nearby ${zoneName}: ${res.status} ${body.slice(0,100)}`)
       return []
     }
 
-    const data: WindyResponse = await res.json()
+    const data = await res.json() as { webcams: WindyCam[] }
     return (data.webcams ?? [])
       .filter(c => c.location?.latitude && c.location?.longitude)
       .filter(c => c.status === 'active')
@@ -138,7 +129,50 @@ async function fetchWebcams(
       .filter((c): c is WindyWebcamEvent => c !== null)
 
   } catch (err) {
-    logger.warn(`Windy ${zoneName} error: ${String(err)}`)
+    logger.warn(`Windy nearby ${zoneName}: ${String(err)}`)
+    return []
+  }
+}
+
+// Fetch webcams by country codes
+async function fetchByCountries(
+  apiKey: string,
+  countryCodes: string[],
+  zoneName: string,
+  limit = 50
+): Promise<WindyWebcamEvent[]> {
+  try {
+    const params = new URLSearchParams({
+      lang: 'en',
+      limit: String(Math.min(limit, 50)),
+      offset: '0',
+    })
+    countryCodes.forEach(c => params.append('countries', c))
+    ;['location', 'images', 'player', 'urls'].forEach(v =>
+      params.append('include', v)
+    )
+
+    const url = `https://api.windy.com/webcams/api/v3/webcams?${params}`
+    const res = await fetch(url, {
+      headers: {
+        'x-windy-api-key': apiKey,
+        'Accept': 'application/json',
+        'User-Agent': 'GlobalWatch/1.0',
+      },
+      signal: AbortSignal.timeout(10000),
+      cache: 'no-store',
+    })
+
+    if (!res.ok) return []
+    const data = await res.json() as { webcams: WindyCam[] }
+    return (data.webcams ?? [])
+      .filter(c => c.location?.latitude && c.location?.longitude)
+      .filter(c => c.status === 'active')
+      .map(c => normalizeCam(c, zoneName))
+      .filter((c): c is WindyWebcamEvent => c !== null)
+
+  } catch (err) {
+    logger.warn(`Windy countries ${zoneName}: ${String(err)}`)
     return []
   }
 }
@@ -182,84 +216,72 @@ export async function GET() {
       })
     }
 
-    // STRATEGY 1: Use NEARBY param (correct format: lat,lon,radius)
-    // for key conflict/crisis locations
+    // Crisis/conflict zone locations with nearby radius
     const nearbyLocations = [
-      { label: 'Gaza/Israel',     lat: 31.50, lon: 34.80, radius: 150 },
-      { label: 'Kyiv Ukraine',    lat: 50.45, lon: 30.52, radius: 200 },
-      { label: 'Kharkiv Ukraine', lat: 49.99, lon: 36.23, radius: 150 },
-      { label: 'Damascus Syria',  lat: 33.51, lon: 36.29, radius: 200 },
-      { label: 'Tehran Iran',     lat: 35.68, lon: 51.38, radius: 150 },
-      { label: 'Baghdad Iraq',    lat: 33.34, lon: 44.40, radius: 150 },
-      { label: 'Karachi Pakistan',lat: 24.86, lon: 67.01, radius: 150 },
-      { label: 'Taipei Taiwan',   lat: 25.03, lon: 121.56,radius: 100 },
-      { label: 'Seoul Korea',     lat: 37.56, lon: 126.97,radius: 100 },
-      { label: 'Khartoum Sudan',  lat: 15.55, lon: 32.53, radius: 200 },
-      { label: 'Mogadishu',       lat: 2.05,  lon: 45.34, radius: 200 },
-      { label: 'Tripoli Libya',   lat: 32.90, lon: 13.18, radius: 200 },
-      { label: 'Caracas Venez',   lat: 10.48, lon: -66.87,radius: 150 },
-      { label: 'Moscow Russia',   lat: 55.75, lon: 37.61, radius: 100 },
-      { label: 'Beijing China',   lat: 39.90, lon: 116.40,radius: 100 },
+      // Middle East
+      { label: 'Jerusalem/Gaza', lat: 31.50, lon: 34.80, r: 150 },
+      { label: 'Tel Aviv',       lat: 32.08, lon: 34.78, r: 50  },
+      { label: 'Tehran',         lat: 35.68, lon: 51.38, r: 150 },
+      { label: 'Damascus',       lat: 33.51, lon: 36.29, r: 150 },
+      { label: 'Baghdad',        lat: 33.34, lon: 44.40, r: 150 },
+      { label: 'Beirut',         lat: 33.88, lon: 35.50, r: 80  },
+      { label: 'Mecca',          lat: 21.42, lon: 39.83, r: 80  },
+      { label: 'Istanbul',       lat: 41.01, lon: 28.97, r: 80  },
+      // Europe/Ukraine
+      { label: 'Kyiv',           lat: 50.45, lon: 30.52, r: 150 },
+      { label: 'Kharkiv',        lat: 49.99, lon: 36.23, r: 100 },
+      { label: 'Odessa',         lat: 46.47, lon: 30.73, r: 100 },
+      { label: 'Moscow',         lat: 55.75, lon: 37.61, r: 80  },
+      // South/East Asia
+      { label: 'Karachi',        lat: 24.86, lon: 67.01, r: 100 },
+      { label: 'Kabul',          lat: 34.52, lon: 69.17, r: 150 },
+      { label: 'Taipei',         lat: 25.03, lon: 121.56,r: 80  },
+      { label: 'Seoul',          lat: 37.56, lon: 126.97,r: 80  },
+      { label: 'Beijing',        lat: 39.90, lon: 116.40,r: 80  },
+      // Africa
+      { label: 'Khartoum',       lat: 15.55, lon: 32.53, r: 200 },
+      { label: 'Mogadishu',      lat: 2.05,  lon: 45.34, r: 200 },
+      { label: 'Nairobi',        lat: -1.28, lon: 36.82, r: 100 },
+      // Americas
+      { label: 'Caracas',        lat: 10.48, lon: -66.87,r: 100 },
+      { label: 'Port-au-Prince', lat: 18.54, lon: -72.33,r: 100 },
     ]
 
-    // Process nearby in batches of 4
-    for (let i = 0; i < nearbyLocations.length; i += 4) {
-      const batch = nearbyLocations.slice(i, i + 4)
+    // Process in batches of 5
+    for (let i = 0; i < nearbyLocations.length; i += 5) {
+      const batch = nearbyLocations.slice(i, i + 5)
       const results = await Promise.allSettled(
         batch.map(loc =>
-          fetchWebcams(
-            apiKey,
-            // CORRECT format from docs: lat,lon,radius
-            { nearby: `${loc.lat},${loc.lon},${loc.radius}` },
-            loc.label
-          )
+          fetchNearby(apiKey, loc.lat, loc.lon, loc.r, loc.label, 10)
         )
       )
       results.forEach(r => {
         if (r.status === 'fulfilled') addCams(r.value)
       })
-      if (i + 4 < nearbyLocations.length) {
-        await new Promise(resolve => setTimeout(resolve, 300))
+      if (i + 5 < nearbyLocations.length) {
+        await new Promise(resolve => setTimeout(resolve, 250))
       }
     }
 
-    // STRATEGY 2: Use COUNTRIES filter for crisis countries
-    // where nearby didn't get enough cams
-    if (allCams.length < 20) {
-      logger.info('Windy: nearby got few results, trying countries filter')
-      const crisisCountries = ['IL', 'UA', 'SY', 'IQ', 'IR',
-        'PK', 'AF', 'SD', 'YE', 'MM', 'TW', 'LY', 'VE', 'HT']
+    // Also fetch by crisis countries for broader coverage
+    const crisisCountries = [
+      ['IL', 'PS'],          // Israel + Palestine
+      ['UA', 'BY'],          // Ukraine + Belarus
+      ['SY', 'IQ', 'LB'],   // Syria, Iraq, Lebanon
+      ['IR', 'YE', 'AF'],   // Iran, Yemen, Afghanistan
+      ['PK', 'MM', 'SD'],   // Pakistan, Myanmar, Sudan
+      ['TW', 'KP', 'LY'],   // Taiwan, N.Korea, Libya
+    ]
 
-      // countries is an array param
-      const countryCams = await fetchWebcams(
-        apiKey,
-        { countries: crisisCountries },
-        'Crisis Countries'
+    for (const group of crisisCountries) {
+      const cams = await fetchByCountries(
+        apiKey, group, group.join('/'), 20
       )
-      addCams(countryCams)
+      addCams(cams)
+      await new Promise(resolve => setTimeout(resolve, 200))
     }
 
-    // STRATEGY 3: Use BBOX with CORRECT format
-    // Format: north_lat,east_lon,south_lat,west_lon
-    if (allCams.length < 10) {
-      logger.info('Windy: trying bbox with correct format')
-      const bboxZones = [
-        // north_lat,east_lon,south_lat,west_lon
-        { label: 'Middle East', bbox: '37.0,63.0,12.0,25.0' },
-        { label: 'Eastern Europe', bbox: '55.0,42.0,44.0,22.0' },
-        { label: 'South Asia', bbox: '37.0,80.0,20.0,60.0' },
-      ]
-      for (const zone of bboxZones) {
-        const bboxCams = await fetchWebcams(
-          apiKey,
-          { bbox: zone.bbox },
-          zone.label
-        )
-        addCams(bboxCams)
-      }
-    }
-
-    logger.info(`Windy: total ${allCams.length} webcams collected`)
+    logger.info(`Windy: fetched ${allCams.length} total webcams`)
 
     const result = {
       data: allCams,
