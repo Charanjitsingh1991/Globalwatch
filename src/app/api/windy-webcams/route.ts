@@ -173,7 +173,7 @@ export async function GET() {
     const allCams: WindyWebcamEvent[] = []
     const seen = new Set<string>()
 
-    function addCams(cams: WindyWebcamEvent[]) {
+    const addCams = (cams: WindyWebcamEvent[]) => {
       cams.forEach(cam => {
         if (!seen.has(cam.id)) {
           seen.add(cam.id)
