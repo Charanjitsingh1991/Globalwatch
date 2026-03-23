@@ -13,6 +13,7 @@ import GPSJamLayer from './layers/GPSJamLayer'
 import SubmarineCableLayer from './layers/SubmarineCableLayer'
 import MilitaryBaseLayer from './layers/MilitaryBaseLayer'
 import WindyWebcamLayer from './layers/WindyWebcamLayer'
+import ShipLayer from './layers/ShipLayer'
 import 'leaflet/dist/leaflet.css'
 
 if (typeof window !== 'undefined') {
@@ -63,6 +64,7 @@ export default function GlobalMap() {
         <FireLayer          visible={layers.fires}       timeFilter={timeFilter} />
         <DisasterLayer      visible={layers.disasters}   timeFilter={timeFilter} />
         <FlightLayer        visible={layers.flights}     timeFilter={timeFilter} />
+        <ShipLayer          visible={layers.ships}       timeFilter={timeFilter} />
         <GPSJamLayer        visible={layers.gpsjam}      timeFilter={timeFilter} />
         <SubmarineCableLayer visible={layers.cables}     timeFilter={timeFilter} />
         <MilitaryBaseLayer  visible={layers.military}    timeFilter={timeFilter} />

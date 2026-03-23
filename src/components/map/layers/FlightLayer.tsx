@@ -1,8 +1,7 @@
 'use client'
-import { memo, useMemo, useEffect } from 'react'
+import { memo, useMemo, useEffect, useState, useCallback } from 'react'
 import { useMap } from 'react-leaflet'
 import { useFlights } from '@/hooks/useFlights'
-import { formatTimestamp } from '@/lib/utils'
 import type { TimeFilter, FlightEvent, BaseEvent } from '@/types/events'
 
 interface Props {
@@ -27,17 +26,18 @@ const CATEGORY_ICONS: Record<string, string> = {
   unknown:   '✈',
 }
 
-// Airport lookup — loaded once
+// Airport lookup — loaded once per process
 let airportDb: Record<string, { name: string; city: string; country: string; iata: string }> = {}
-let airportDbLoaded = false
+let airportDbLoading = false // Global flag to prevent multiple concurrent fetches
 
-async function loadAirportDb() {
-  if (airportDbLoaded) return
+async function fetchAirportDb(): Promise<void> {
+  if (airportDbLoading) return
+  airportDbLoading = true
   try {
     const res = await fetch('/data/airports.json')
     airportDb = await res.json()
-    airportDbLoaded = true
   } catch { /* use empty */ }
+  airportDbLoading = false
 }
 
 function getAirportLabel(icao: string | undefined): string {
@@ -59,7 +59,7 @@ function formatSpeed(ms: number): string {
 }
 
 function buildPopupHtml(flight: FlightEvent & {
-  airline?: string; originAirport?: string; destAirport?: string
+  airline?: string; originAirport?: string; destAirport?: string; originCountry?: string
 }, color: string): string {
   const origin = getAirportLabel(flight.originAirport)
   const dest   = getAirportLabel(flight.destAirport)
@@ -122,7 +122,7 @@ function buildPopupHtml(flight: FlightEvent & {
         </div>
         <div style="background:#1A1A28;border-radius:3px;padding:4px 6px;">
           <div style="color:#888;font-size:9px;text-transform:uppercase;">Squawk</div>
-          <div style="color:${flight.squawk === '7700' ? '#EF4444' : flight.squawk === '7500' ? '#EF4444' : '#F0F0F0'};font-size:11px;font-weight:bold;">
+          <div style="color:${['7700','7500'].includes(flight.squawk) ? '#EF4444' : '#F0F0F0'};font-size:11px;font-weight:bold;">
             ${flight.squawk || '—'}
             ${flight.squawk === '7700' ? ' ⚠ EMERGENCY' : ''}
             ${flight.squawk === '7500' ? ' ⚠ HIJACK' : ''}
@@ -142,10 +142,16 @@ function buildPopupHtml(flight: FlightEvent & {
 
 function FlightLayerInner({ visible, onEventSelect }: Props) {
   const map = useMap()
-  const { events, loading } = useFlights()
+  const { events } = useFlights()
+  const [airportDbIsLoaded, setAirportDbIsLoaded] = useState(false)
 
   // Load airport DB when component mounts
-  useEffect(() => { loadAirportDb() }, [])
+  useEffect(() => {
+    if (airportDbIsLoaded) return // Already loaded
+    fetchAirportDb().then(() => {
+      setAirportDbIsLoaded(true)
+    })
+  }, [airportDbIsLoaded]) // Re-run if airportDbIsLoaded changes (though it only changes once)
 
   const filtered = useMemo(
     () => visible ? events.slice(0, 3000) : [],
@@ -153,18 +159,18 @@ function FlightLayerInner({ visible, onEventSelect }: Props) {
   )
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !airportDbLoaded) {
-      // Retry after airport DB loads
-      const timer = setTimeout(() => loadAirportDb(), 1000)
-      return () => clearTimeout(timer)
-    }
+    if (typeof window === 'undefined' || !filtered.length) return
+    if (!airportDbIsLoaded) return // Wait for airport DB to load
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const L = require('leaflet')
     const markers: ReturnType<typeof L.marker>[] = []
+    let destroyed = false
 
     filtered.forEach((flight: FlightEvent & {
-      airline?: string; originAirport?: string; destAirport?: string
+      airline?: string; originAirport?: string; destAirport?: string; originCountry?: string
     }) => {
+      if (destroyed) return // Prevent adding markers if component unmounted during async operations
       const color = CATEGORY_COLORS[flight.category] ?? '#6B7280'
       const rotate = flight.heading ?? 0
 
@@ -197,8 +203,11 @@ function FlightLayerInner({ visible, onEventSelect }: Props) {
       markers.push(marker)
     })
 
-    return () => { markers.forEach((m) => map.removeLayer(m)) }
-  }, [filtered, map, onEventSelect])
+    return () => {
+      destroyed = true
+      markers.forEach((m) => map.removeLayer(m))
+    }
+  }, [filtered, map, onEventSelect, airportDbIsLoaded]) // Add airportDbIsLoaded to dependencies
 
   return null
 }
